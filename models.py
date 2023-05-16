@@ -18,11 +18,16 @@ class UserParams(SQLModel, ActiveRecordMixin, table=True):
     sender_user_id: Optional[int] = Field(foreign_key="user.id")
     receiver_user_id: Optional[int] = Field(foreign_key="user.id")
     sender_user: Optional["User"] = Relationship(back_populates="sender_params",
-                                                 sa_relationship_kwargs={"uselist": False,
+                                                 sa_relationship_kwargs={"uselist": False, "cascade": "delete",
                                                                          "primaryjoin": "UserParams.sender_user_id == User.id"})
     receiver_user: Optional["User"] = Relationship(back_populates="receiver_params",
-                                                   sa_relationship_kwargs={"uselist": False,
+                                                   sa_relationship_kwargs={"uselist": False, "cascade": "delete",
                                                                            "primaryjoin": "UserParams.receiver_user_id == User.id"})
+
+
+class Friendship(SQLModel, ActiveRecordMixin, table=True):
+    user_id: int = Field(primary_key=True, foreign_key="user.id")
+    friend_id: int = Field(primary_key=True, foreign_key="user.id")
 
 
 class User(SQLModel, ActiveRecordMixin, table=True):
@@ -43,11 +48,18 @@ class User(SQLModel, ActiveRecordMixin, table=True):
                                                                          "primaryjoin": "UserParams.receiver_user_id == User.id",
                                                                          "lazy": "subquery"})
 
+    friends: List["User"] = Relationship(link_model=Friendship, sa_relationship_kwargs={
+        "primaryjoin": "User.id == Friendship.user_id", "secondaryjoin": "User.id == Friendship.friend_id",
+    })
+
 
 # PYDANTIC MODELS
 
-class UserCreate(SQLModel):
+class UserList(SQLModel):
     username: str
+
+
+class UserCreate(UserList):
     email: EmailStr
     password: str
 
@@ -58,7 +70,7 @@ class ConventionalUserCreate(UserCreate):
     code_creation_date: datetime = datetime.now()
 
 
-class Message(SQLModel):
+class Result(SQLModel):
     message: str
 
 

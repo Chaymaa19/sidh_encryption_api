@@ -5,7 +5,7 @@ from database.connection import engine_url
 from models import User
 from sqlmodel import select, Session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 async def authenticate(token: str = Depends(oauth2_scheme)) -> User:

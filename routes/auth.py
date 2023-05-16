@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from auth.hash_password import create_hash, verify_hash
 from auth.jwt_handler import create_access_token, generate_password_reset_token, verify_password_reset_token
 from utils.config import get_settings
-from models import UserCreate, ConventionalUserCreate, User, UserParams, Message, TokenResponse
+from models import UserCreate, ConventionalUserCreate, User, UserParams, Result, TokenResponse
 from database.connection import get_session
 from utils.send_email import send_email_background
 from utils.utils import create_params, setup
@@ -14,7 +14,7 @@ auth_router = APIRouter(tags=["auth"])
 settings = get_settings()
 
 
-@auth_router.post("/signup", response_model=Message)
+@auth_router.post("/signup", response_model=Result)
 async def sign_new_user(background_tasks: BackgroundTasks, user: UserCreate = Body(...), session=Depends(get_session)):
     user_exist = User.first_by_field(session, "email", user.email)
     if user_exist:
@@ -47,7 +47,7 @@ async def sign_new_user(background_tasks: BackgroundTasks, user: UserCreate = Bo
     return {"message": "User signed up successfully!"}
 
 
-@auth_router.get("/verify-email/{verification_code}", response_model=Message)
+@auth_router.get("/verify-email/{verification_code}", response_model=Result)
 async def verify_user(verification_code: str, session=Depends(get_session)) -> dict:
     user_to_verify = User.first_by_field(session, "verification_code", verification_code)
     if not user_to_verify:
@@ -68,7 +68,7 @@ async def verify_user(verification_code: str, session=Depends(get_session)) -> d
     return {"message": "Account verified successfully"}
 
 
-@auth_router.get("/resend-verification-email/{verification_code}", response_model=Message)
+@auth_router.get("/resend-verification-email/{verification_code}", response_model=Result)
 async def resend_verification_email(verification_code: str, background_tasks: BackgroundTasks,
                                     session=Depends(get_session)):
     current_user = User.first_by_field(session, "verification_code", verification_code)
@@ -108,7 +108,7 @@ def login(user: OAuth2PasswordRequestForm = Depends(), session=Depends(get_sessi
     )
 
 
-@auth_router.post("/password-recovery", response_model=Message)
+@auth_router.post("/password-recovery", response_model=Result)
 async def change_password(background_tasks: BackgroundTasks, email: str = Body(...), new_password: str = Body(...),
                           session=Depends(get_session)):
     current_user = User.first_by_field(session, "email", email)
@@ -132,7 +132,7 @@ async def change_password(background_tasks: BackgroundTasks, email: str = Body(.
     return {"message": "Password recovery email sent"}
 
 
-@auth_router.get("/reset-password", response_model=Message)
+@auth_router.get("/reset-password", response_model=Result)
 def reset_password(token: str = Query(...), new_password: str = Query(...), session=Depends(get_session)):
     email = verify_password_reset_token(token)
     if not email:
