@@ -1,13 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
 from database.connection import get_session
-from models import User
+from models import User, Message, MessageRead
 from auth.authenticate import authenticate
 from utils.utils import *
 from subprocess import run, PIPE
 import os
 from auth import encrypt_data
+from sqlmodel import select, or_
+from typing import List
 
 messages_router = APIRouter(tags=["messages"])
+
+
+@messages_router.get("/", response_model=List[MessageRead])
+async def retrieve_conversation(receiver_username: str, user: User = Depends(authenticate),
+                                session=Depends(get_session)):
+    friend = User.first_by_field(session, "username", receiver_username)
+    query = select(Message).where(or_(Message.sender_id == user.id, Message.sender_id == friend.id)) \
+        .where(or_(Message.receiver_id == friend.id, Message.receiver_id == user.id))
+    result = session.exec(query).all()
+    return result
+
+
+@messages_router.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"Message text was: {data}")
 
 
 @messages_router.post("/encrypt")
@@ -65,3 +85,45 @@ async def decrypt(sender: str, cipher_message: str, user: User = Depends(authent
     result = xor(hash_val, cipher_message)
 
     return {"result": bits_to_string(result)}
+
+
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = new WebSocket("ws://localhost:8000/messages/ws");
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
+
+from fastapi.responses import HTMLResponse
+
+
+@messages_router.get("/template")
+async def get():
+    return HTMLResponse(html)

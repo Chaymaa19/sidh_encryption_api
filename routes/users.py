@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends
 from database.connection import get_session
-from models import User, Friendship, UserList
+from models import User, Friendship, UserRead
 from auth.authenticate import authenticate
 from typing import List
 
 friends_router = APIRouter(tags=["friends"])
 
 
-@friends_router.get("/", response_model=List[UserList])
+@friends_router.get("/", response_model=List[UserRead])
 async def list_friends(user: User = Depends(authenticate), session=Depends(get_session)):
     current_user = User.one_by_id(session, user.id)
     return current_user.friends
