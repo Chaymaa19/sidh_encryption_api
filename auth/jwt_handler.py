@@ -12,7 +12,7 @@ SECRET_KEY = settings.SECRET_KEY
 def create_access_token(user: str) -> str:
     payload = {
         "user": user,
-        "expires": time.time() + 3600
+        "expires": time.time() + timedelta(days=settings.TOKEN_EXPIRE_DAYS).total_seconds()
     }
     token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     return token
@@ -41,7 +41,7 @@ def verify_access_token(token: str) -> str:
 
 
 def generate_password_reset_token(email: str) -> str:
-    delta = timedelta(hours=24)
+    delta = timedelta(hours=settings.RESET_PASSWORD_EXPIRE_HOURS)
     now = datetime.utcnow()
     expires = now + delta
     exp = expires.timestamp()

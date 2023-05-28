@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     DAYS_TO_VERIFY_EMAIL: Optional[int]
     ENCRYPTION_KEY: Optional[str]
     TEST_PASSWORD: Optional[str]
+    TOKEN_EXPIRE_DAYS: Optional[int]
+    RESET_PASSWORD_EXPIRE_HOURS: Optional[int]
 
 
 # Settings is a singleton

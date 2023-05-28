@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends
 from database.connection import get_session
 from models import User, Message, MessageRead
 from auth.authenticate import authenticate
@@ -42,36 +42,5 @@ async def retrieve_conversation(receiver_username: str, user: User = Depends(aut
         hash_val = stdout.decode().strip()
         decrypted_message = xor(hash_val, message.content)
         result[i].content = bits_to_string(decrypted_message)
-        print(result[i])
 
     return result[::-1]
-
-
-@messages_router.post("/")
-async def send_message(receiver_username: str = Body(...), message: str = Body(...), user: User = Depends(authenticate),
-                       session=Depends(get_session)):
-    # Encrypt message
-    receiver_user = User.first_by_field(session, "username", receiver_username)
-
-    # Get encryption parameters
-    sender_m = str(encrypt_data.decrypt(user.sender_params.m))
-    sender_n = str(encrypt_data.decrypt(user.sender_params.n))
-    receiver_curve = receiver_user.receiver_params.elliptic_curve
-    receiver_phi_point_p = receiver_user.receiver_params.phi_other_p
-    receiver_phi_point_q = receiver_user.receiver_params.phi_other_q
-
-    # Compute encrypted message
-    script_path = os.getcwd() + os.sep + "utils" + os.sep + "get_hash.sage"
-    process = run(
-        ['sage', script_path, sender_m, sender_n, receiver_curve, str(receiver_phi_point_p), str(receiver_phi_point_q)],
-        stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.stdout, process.stderr
-    if stderr:
-        print(stderr.decode())
-    hash_val = stdout.decode().strip()
-    bin_msg = str_to_bin(message)
-    encrypted_message = xor(hash_val, bin_msg)
-
-    # Save in database
-    new_message = Message(content=encrypted_message, sender_id=user.id, receiver_id=receiver_user.id)
-    Message.create(session, new_message)
