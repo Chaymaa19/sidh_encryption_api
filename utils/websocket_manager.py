@@ -41,8 +41,6 @@ class ConnectionManager:
                  str(receiver_phi_point_q)],
                 stdout=PIPE, stderr=PIPE)
             stdout, stderr = process.stdout, process.stderr
-            if stderr:
-                print(stderr.decode())
             hash_val = stdout.decode().strip()
             bin_msg = str_to_bin(message["message"])
             encrypted_message = xor(hash_val, bin_msg)

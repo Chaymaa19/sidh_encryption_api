@@ -37,8 +37,6 @@ async def retrieve_conversation(receiver_username: str, user: User = Depends(aut
         process = run(['sage', script_path, receiver_m, receiver_n, sender_curve, str(sender_phi_point_p),
                        str(sender_phi_point_q)], stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.stdout, process.stderr
-        if stderr:
-            print(stderr.decode())
         hash_val = stdout.decode().strip()
         decrypted_message = xor(hash_val, message.content)
         result[i].content = bits_to_string(decrypted_message)

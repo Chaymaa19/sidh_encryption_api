@@ -35,7 +35,7 @@ def verify_access_token(token: str) -> str:
         return data
     except JWTError:
         raise HTTPException(
-            status_code=status.HTTP_BAD_REQUEST,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid Token"
         )
 

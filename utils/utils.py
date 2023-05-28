@@ -8,8 +8,6 @@ def setup():
     script_path = os.getcwd() + os.sep + "utils" + os.sep + "setup.sage"
     process = run(['sage', script_path], stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.stdout, process.stderr
-    if stderr:
-        print(stderr.decode())
     return stdout.decode().strip().split("\n")
 
 
