@@ -1,7 +1,7 @@
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from auth.hash_password import create_hash, verify_hash
-from auth.jwt_handler import create_access_token, generate_password_reset_token, verify_password_reset_token
+from auth.jwt_handler import create_access_token
 from utils.config import get_settings
 from models import UserCreate, ConventionalUserCreate, User, UserParams, Result, TokenResponse
 from database.connection import get_session
@@ -9,6 +9,7 @@ from utils.send_email import send_email_background
 from utils.utils import create_params, setup
 from datetime import datetime
 import random
+from fastapi.responses import HTMLResponse
 
 auth_router = APIRouter(tags=["auth"])
 settings = get_settings()
@@ -47,8 +48,8 @@ async def sign_new_user(background_tasks: BackgroundTasks, user: UserCreate = Bo
     return {"message": "User signed up successfully!"}
 
 
-@auth_router.get("/verify-email/{verification_code}", response_model=Result)
-async def verify_user(verification_code: str, session=Depends(get_session)) -> dict:
+@auth_router.get("/verify-email/{verification_code}")
+async def verify_user(verification_code: str, session=Depends(get_session)):
     user_to_verify = User.first_by_field(session, "verification_code", verification_code)
     if not user_to_verify:
         raise HTTPException(
@@ -64,8 +65,18 @@ async def verify_user(verification_code: str, session=Depends(get_session)) -> d
         )
 
     user_to_verify.update(session, {"verification_code": "", "is_verified": True})
-
-    return {"message": "Account verified successfully"}
+    html = """
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Chat</title>
+        </head>
+        <body>
+            <h1>Account verified successfully</h1>
+        </body>
+    </html>
+    """
+    return HTMLResponse(html)
 
 
 @auth_router.get("/resend-verification-email/{verification_code}", response_model=Result)
@@ -106,46 +117,3 @@ def login(user: OAuth2PasswordRequestForm = Depends(), session=Depends(get_sessi
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid details passed."
     )
-
-
-@auth_router.post("/password-recovery", response_model=Result)
-async def change_password(background_tasks: BackgroundTasks, email: str = Body(...), new_password: str = Body(...),
-                          session=Depends(get_session)):
-    current_user = User.first_by_field(session, "email", email)
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The user with this email does not exist in the system.",
-        )
-    if not current_user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User not verified. Please, verify your account with the email received."
-        )
-
-    password_reset_token = generate_password_reset_token(email=email)
-    hashed_password = create_hash(new_password)
-    send_email_background(background_tasks, 'Reset your password', current_user.email, {
-        'redirect': f"{settings.SERVER_HOST}/auth/reset-password?token={password_reset_token}&new_password={hashed_password}",
-    }, template_name="reset-password.html")
-
-    return {"message": "Password recovery email sent"}
-
-
-@auth_router.get("/reset-password", response_model=Result)
-def reset_password(token: str = Query(...), new_password: str = Query(...), session=Depends(get_session)):
-    email = verify_password_reset_token(token)
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invalid token",
-        )
-    current_user = User.first_by_field(session, "email", email)
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The user with this username does not exist.",
-        )
-
-    current_user.update(session, {"password": new_password})
-    return {"message": "Password updated successfully"}
