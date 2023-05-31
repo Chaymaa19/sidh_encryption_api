@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from database.connection import get_session
 from models import User, Friendship, UserRead
 from auth.authenticate import authenticate
@@ -16,6 +16,11 @@ async def list_friends(user: User = Depends(authenticate), session=Depends(get_s
 @friends_router.post("/")
 async def add_friend(friend_username: str, user: User = Depends(authenticate), session=Depends(get_session)):
     friend = User.first_by_field(session, "username", friend_username)
+    if not friend:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Username provided does not exist"
+        )
     new_friendship = Friendship(user_id=user.id, friend_id=friend.id)
     Friendship.create(session, new_friendship)
     return {"message": "User added successfully!"}
