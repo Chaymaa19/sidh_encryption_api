@@ -4,3 +4,4 @@ __pycache__
 .env
 .env.prod
 app.yaml
+deploy_instructions.txt

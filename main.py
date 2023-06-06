@@ -25,7 +25,7 @@ def init_db():
 
 @app.get("/")
 async def is_logged_in(user: User = Depends(authenticate)) -> dict:
-    return {"message": "user logged in"}
+    return {"username": user.username, "email": user.email}
 
 
 manager = ConnectionManager()
