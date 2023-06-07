@@ -22,15 +22,15 @@ def populate_database():
         alice = User(username="alice", email="alice@example.com",
                      password=create_hash(get_settings().TEST_PASSWORD), is_verified=True)
         if User.first_by_field(session, "username", "alice") is None:
-            User.create(session, alice)
+            new_user = User.create(session, alice)
             result1, result2 = setup()
-            UserParams.create(session, create_params(result1, receiver_id=1))
-            UserParams.create(session, create_params(result2, sender_id=1))
+            UserParams.create(session, create_params(result1, receiver_id=new_user.id))
+            UserParams.create(session, create_params(result2, sender_id=new_user.id))
 
         bob = User(username="bob", email="bob@example.com", password=create_hash(get_settings().TEST_PASSWORD),
                    is_verified=True)
         if User.first_by_field(session, "username", "bob") is None:
-            User.create(session, bob)
+            new_user = User.create(session, bob)
             result1, result2 = setup()
-            UserParams.create(session, create_params(result1, receiver_id=2))
-            UserParams.create(session, create_params(result2, sender_id=2))
+            UserParams.create(session, create_params(result1, receiver_id=new_user.id))
+            UserParams.create(session, create_params(result2, sender_id=new_user.id))

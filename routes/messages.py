@@ -8,7 +8,6 @@ import os
 from auth import encrypt_data
 from sqlmodel import select, or_
 from typing import List
-import time
 
 messages_router = APIRouter(tags=["messages"])
 
@@ -16,7 +15,6 @@ messages_router = APIRouter(tags=["messages"])
 @messages_router.get("/", response_model=List[MessageRead])
 async def retrieve_conversation(receiver_username: str, user: User = Depends(authenticate),
                                 session=Depends(get_session)):
-    before = time.time()
     receiver = User.first_by_field(session, "username", receiver_username)
     query = select(Message).where(or_(Message.sender_id == user.id, Message.sender_id == receiver.id)) \
         .where(or_(Message.receiver_id == receiver.id, Message.receiver_id == user.id))
@@ -51,5 +49,4 @@ async def retrieve_conversation(receiver_username: str, user: User = Depends(aut
         decrypted_message = xor(hash_val, message.content)
         conversation[i].content = bits_to_string(decrypted_message)
 
-    print("FI", time.time() - before)
     return conversation
