@@ -31,3 +31,14 @@ phi_q = curve(eval(sys.argv[5]))
 hash_val = get_hash(m, n, phi_p, phi_q, curve)
 
 print(hash_val)
+
+m = int(sys.argv[6])
+n = int(sys.argv[7])
+F.<a> = GF(common.p^2,'a')
+curve = EllipticCurve(GF(common.p^2, 'a'), eval(sys.argv[8]))
+phi_p = curve(eval(sys.argv[9]))
+phi_q = curve(eval(sys.argv[10]))
+
+hash_val = get_hash(m, n, phi_p, phi_q, curve)
+
+print(hash_val)
