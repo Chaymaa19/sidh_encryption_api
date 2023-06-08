@@ -17,7 +17,7 @@ async def retrieve_conversation(receiver_username: str, user: User = Depends(aut
                                 session=Depends(get_session)):
     receiver = User.first_by_field(session, "username", receiver_username)
     query = select(Message).where(or_(Message.sender_id == user.id, Message.sender_id == receiver.id)) \
-        .where(or_(Message.receiver_id == receiver.id, Message.receiver_id == user.id))
+        .where(or_(Message.receiver_id == receiver.id, Message.receiver_id == user.id)).order_by(Message.id)
     conversation = session.exec(query).all()
 
     # User's messages params
